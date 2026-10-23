@@ -45,18 +45,40 @@ nothing is shared — there is no shared database and no shared persistence libr
 | **Checkout** | `checkout_db` — `transactions`, `transaction_line_items` | `POST /transactions`, `/items`, `/complete`, `GET /transactions/{id}` | — | Catalog, Inventory, Analytics |
 | **Analytics** | `analytics_db` — `scan_events`, `popular_items_snapshot` | `GET /analytics/popular-items` | `LogScan` | — |
 
-### How the two multi-store flows work
+### Request flow — a complete checkout, end to end
 
-- **Scan** (`POST /transactions/{id}/items`): Checkout asks **Catalog** for the
-  price/name over gRPC, writes its own line item, then fires a best-effort
-  `LogScan` to **Analytics** (analytics being down never fails a scan).
-- **Complete** (`POST /transactions/{id}/complete`) — the **saga**: Checkout
-  decrements the whole basket in **one** batched gRPC call to **Inventory** (which
-  fulfils each SKU up to available stock under a row lock, so stock can never go
-  negative), then commits the completion in its own database. If that local commit
-  fails after the decrements, Checkout **compensates** by returning the units to
-  Inventory. This keeps the correctness invariant intact without a shared
-  transaction across databases.
+```mermaid
+sequenceDiagram
+    actor C as Client
+    participant G as Gateway
+    participant CO as Checkout
+    participant CAT as Catalog
+    participant INV as Inventory
+    participant AN as Analytics
+
+    Note over C,AN: Start a new transaction (open a basket)
+    C->>G: 1. POST /transactions
+    G->>CO: 2. start
+    CO-->>C: 3. 201 transactionId
+
+    Note over C,AN: Scan one item into the basket
+    C->>G: 4. POST /transactions/{id}/items
+    G->>CO: 5. scan
+    CO->>CAT: 6. gRPC GetItem (price/name)
+    CO->>AN: 7. gRPC LogScan
+    CO-->>C: 8. 200 running total
+
+    Note over C,AN: Complete — take payment, decrement stock, return receipt
+    C->>G: 9. POST /transactions/{id}/complete
+    G->>CO: 10. complete
+    CO->>INV: 11. gRPC DecrementStockBatch
+    CO-->>C: 12. 200 receipt
+```
+
+Checkout is the only caller of other services. The scan's `LogScan` is best-effort
+(Analytics being down never fails a scan); the complete is a saga — if Checkout's
+local commit fails after the decrements, it returns the units to Inventory, so the
+two databases stay consistent without a shared transaction.
 
 ## Running it
 
@@ -132,7 +154,4 @@ not a defect — the same work is now spread across process and database boundar
    gateway (as in the service-based week), and there are now four JVMs and four
    Postgres instances competing for the same host resources instead of three JVMs on
    one database.
-
-
-
 
