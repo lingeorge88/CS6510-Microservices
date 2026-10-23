@@ -1,0 +1,50 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+
+    <parent>
+        <groupId>org.springframework.boot</groupId>
+        <artifactId>spring-boot-starter-parent</artifactId>
+        <version>4.1.1</version>
+        <relativePath/>
+    </parent>
+
+    <groupId>com.selfcheckout</groupId>
+    <artifactId>microservices</artifactId>
+    <version>0.0.1-SNAPSHOT</version>
+    <packaging>pom</packaging>
+    <name>microservices</name>
+    <description>Microservices implementation of the self-checkout API: four independently deployable
+        services, each with its OWN database, coordinated over gRPC with an orchestrated saga.</description>
+
+    <!--
+      Four independently deployable microservices, each owning its own Postgres
+      database. Services never share a database or a persistence library; the only
+      shared module is `proto`, which carries the gRPC CONTRACTS (.proto) used for
+      synchronous inter-service calls. Cross-service multi-store writes (the
+      `complete` flow) are coordinated by an orchestrated saga in checkout-service.
+
+      Build the jars on the host first, then build images and start:
+        mvn -DskipTests package
+        docker compose up (with the build flag)
+      The load client targets the gateway: http://localhost:8080
+    -->
+    <properties>
+        <java.version>21</java.version>
+        <!-- gRPC/protobuf pinned to a known-good classic pairing, overriding the
+             Spring Boot BOM, so we wire gRPC explicitly rather than depend on the
+             brand-new Boot 4.1 gRPC auto-configuration. -->
+        <grpc.version>1.68.1</grpc.version>
+        <protobuf.version>3.25.5</protobuf.version>
+    </properties>
+
+    <modules>
+        <module>proto</module>
+        <module>catalog-service</module>
+        <module>inventory-service</module>
+        <module>checkout-service</module>
+        <module>analytics-service</module>
+    </modules>
+
+</project>

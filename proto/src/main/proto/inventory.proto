@@ -1,0 +1,26 @@
+syntax = "proto3";
+
+package selfcheckout.inventory;
+
+option java_multiple_files = true;
+option java_package = "com.selfcheckout.grpc.inventory";
+option java_outer_classname = "InventoryProto";
+
+// Inventory owns stock. Checkout drives it as the saga orchestrator at completion:
+// DecrementStock per sold unit, and IncrementStock to compensate if checkout's own
+// local commit fails after the decrements. The decrement is an atomic guarded
+// UPDATE, so stock can never go negative even under concurrent completions.
+service InventoryService {
+  rpc DecrementStock (StockRequest) returns (StockResponse);
+  rpc IncrementStock (StockRequest) returns (StockResponse);
+}
+
+message StockRequest {
+  string sku = 1;
+}
+
+message StockResponse {
+  // DecrementStock: true if a unit was decremented, false if already out of stock.
+  // IncrementStock: true once the compensation has been applied.
+  bool ok = 1;
+}

@@ -1,0 +1,6 @@
+/Users/georgelin/Desktop/CS6510-Microservices/catalog-service/src/main/java/com/selfcheckout/catalog/CatalogApplication.java
+/Users/georgelin/Desktop/CS6510-Microservices/catalog-service/src/main/java/com/selfcheckout/catalog/CatalogController.java
+/Users/georgelin/Desktop/CS6510-Microservices/catalog-service/src/main/java/com/selfcheckout/catalog/data/CatalogItem.java
+/Users/georgelin/Desktop/CS6510-Microservices/catalog-service/src/main/java/com/selfcheckout/catalog/data/CatalogItemRepository.java
+/Users/georgelin/Desktop/CS6510-Microservices/catalog-service/src/main/java/com/selfcheckout/catalog/grpc/CatalogGrpcService.java
+/Users/georgelin/Desktop/CS6510-Microservices/catalog-service/src/main/java/com/selfcheckout/catalog/grpc/GrpcServerLifecycle.java

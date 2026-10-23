@@ -1,0 +1,26 @@
+server:
+  port: ${SERVER_PORT:8081}
+
+grpc:
+  server:
+    port: ${GRPC_PORT:9091}
+
+spring:
+  application:
+    name: catalog-service
+  datasource:
+    # Catalog's OWN database. Host defaults to localhost for bare-JVM runs;
+    # docker-compose sets DB_HOST=catalog-db.
+    url: jdbc:postgresql://${DB_HOST:localhost}:${DB_PORT:5441}/${DB_NAME:catalog}
+    username: ${DB_USER:postgres}
+    password: ${DB_PASSWORD:postgres}
+    hikari:
+      maximum-pool-size: ${DB_POOL_SIZE:10}
+      minimum-idle: ${DB_POOL_SIZE:10}
+      pool-name: catalogPool
+  jpa:
+    hibernate:
+      # Schema is owned by the database (created once by the Postgres init scripts).
+      ddl-auto: none
+    open-in-view: false
+    show-sql: false

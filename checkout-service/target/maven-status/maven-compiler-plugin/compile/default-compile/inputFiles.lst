@@ -1,0 +1,10 @@
+/Users/georgelin/Desktop/CS6510-Microservices/checkout-service/src/main/java/com/selfcheckout/checkout/CheckoutApplication.java
+/Users/georgelin/Desktop/CS6510-Microservices/checkout-service/src/main/java/com/selfcheckout/checkout/api/ApiExceptionHandler.java
+/Users/georgelin/Desktop/CS6510-Microservices/checkout-service/src/main/java/com/selfcheckout/checkout/api/CheckoutController.java
+/Users/georgelin/Desktop/CS6510-Microservices/checkout-service/src/main/java/com/selfcheckout/checkout/clients/GrpcClientConfig.java
+/Users/georgelin/Desktop/CS6510-Microservices/checkout-service/src/main/java/com/selfcheckout/checkout/data/Transaction.java
+/Users/georgelin/Desktop/CS6510-Microservices/checkout-service/src/main/java/com/selfcheckout/checkout/data/TransactionLineItem.java
+/Users/georgelin/Desktop/CS6510-Microservices/checkout-service/src/main/java/com/selfcheckout/checkout/data/TransactionLineItemRepository.java
+/Users/georgelin/Desktop/CS6510-Microservices/checkout-service/src/main/java/com/selfcheckout/checkout/data/TransactionRepository.java
+/Users/georgelin/Desktop/CS6510-Microservices/checkout-service/src/main/java/com/selfcheckout/checkout/transactions/CheckoutException.java
+/Users/georgelin/Desktop/CS6510-Microservices/checkout-service/src/main/java/com/selfcheckout/checkout/transactions/TransactionService.java

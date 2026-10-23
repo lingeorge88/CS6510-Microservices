@@ -1,0 +1,15 @@
+com/selfcheckout/checkout/data/Transaction$TransactionStatus.class
+com/selfcheckout/checkout/api/CheckoutController$ScanItemRequest.class
+com/selfcheckout/checkout/transactions/CheckoutException$Kind.class
+com/selfcheckout/checkout/api/CheckoutController.class
+com/selfcheckout/checkout/data/TransactionRepository.class
+com/selfcheckout/checkout/clients/GrpcClientConfig.class
+com/selfcheckout/checkout/data/TransactionLineItemRepository.class
+com/selfcheckout/checkout/api/ApiExceptionHandler$1.class
+com/selfcheckout/checkout/transactions/CheckoutException.class
+com/selfcheckout/checkout/data/Transaction.class
+com/selfcheckout/checkout/transactions/TransactionService.class
+com/selfcheckout/checkout/data/TransactionLineItem.class
+com/selfcheckout/checkout/CheckoutApplication.class
+com/selfcheckout/checkout/api/ApiExceptionHandler.class
+com/selfcheckout/checkout/api/CheckoutController$StartTransactionRequest.class

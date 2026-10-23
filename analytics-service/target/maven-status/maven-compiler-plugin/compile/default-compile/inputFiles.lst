@@ -1,0 +1,9 @@
+/Users/georgelin/Desktop/CS6510-Microservices/analytics-service/src/main/java/com/selfcheckout/analytics/AnalyticsApplication.java
+/Users/georgelin/Desktop/CS6510-Microservices/analytics-service/src/main/java/com/selfcheckout/analytics/AnalyticsController.java
+/Users/georgelin/Desktop/CS6510-Microservices/analytics-service/src/main/java/com/selfcheckout/analytics/AnalyticsService.java
+/Users/georgelin/Desktop/CS6510-Microservices/analytics-service/src/main/java/com/selfcheckout/analytics/data/PopularItemSnapshot.java
+/Users/georgelin/Desktop/CS6510-Microservices/analytics-service/src/main/java/com/selfcheckout/analytics/data/PopularItemSnapshotRepository.java
+/Users/georgelin/Desktop/CS6510-Microservices/analytics-service/src/main/java/com/selfcheckout/analytics/data/ScanEvent.java
+/Users/georgelin/Desktop/CS6510-Microservices/analytics-service/src/main/java/com/selfcheckout/analytics/data/ScanEventRepository.java
+/Users/georgelin/Desktop/CS6510-Microservices/analytics-service/src/main/java/com/selfcheckout/analytics/grpc/AnalyticsGrpcService.java
+/Users/georgelin/Desktop/CS6510-Microservices/analytics-service/src/main/java/com/selfcheckout/analytics/grpc/GrpcServerLifecycle.java

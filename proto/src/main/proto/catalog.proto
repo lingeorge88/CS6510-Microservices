@@ -1,0 +1,26 @@
+syntax = "proto3";
+
+package selfcheckout.catalog;
+
+option java_multiple_files = true;
+option java_package = "com.selfcheckout.grpc.catalog";
+option java_outer_classname = "CatalogProto";
+
+// Catalog is the system of record for product reference data. Checkout calls
+// GetItem synchronously during scan (price/name) and complete (receipt names).
+service CatalogService {
+  rpc GetItem (GetItemRequest) returns (GetItemResponse);
+}
+
+message GetItemRequest {
+  string sku = 1;
+}
+
+message GetItemResponse {
+  bool found = 1;
+  string sku = 2;
+  string name = 3;
+  // Decimal carried as a string to preserve exactness (e.g. "0.85"); the caller
+  // parses it back into BigDecimal. Avoids float rounding on money.
+  string price = 4;
+}
