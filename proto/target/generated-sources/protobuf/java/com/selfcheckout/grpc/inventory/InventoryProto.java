@@ -25,6 +25,26 @@ public final class InventoryProto {
   static final 
     com.google.protobuf.GeneratedMessageV3.FieldAccessorTable
       internal_static_selfcheckout_inventory_StockResponse_fieldAccessorTable;
+  static final com.google.protobuf.Descriptors.Descriptor
+    internal_static_selfcheckout_inventory_StockLine_descriptor;
+  static final 
+    com.google.protobuf.GeneratedMessageV3.FieldAccessorTable
+      internal_static_selfcheckout_inventory_StockLine_fieldAccessorTable;
+  static final com.google.protobuf.Descriptors.Descriptor
+    internal_static_selfcheckout_inventory_BatchStockRequest_descriptor;
+  static final 
+    com.google.protobuf.GeneratedMessageV3.FieldAccessorTable
+      internal_static_selfcheckout_inventory_BatchStockRequest_fieldAccessorTable;
+  static final com.google.protobuf.Descriptors.Descriptor
+    internal_static_selfcheckout_inventory_StockResult_descriptor;
+  static final 
+    com.google.protobuf.GeneratedMessageV3.FieldAccessorTable
+      internal_static_selfcheckout_inventory_StockResult_fieldAccessorTable;
+  static final com.google.protobuf.Descriptors.Descriptor
+    internal_static_selfcheckout_inventory_BatchStockResponse_descriptor;
+  static final 
+    com.google.protobuf.GeneratedMessageV3.FieldAccessorTable
+      internal_static_selfcheckout_inventory_BatchStockResponse_fieldAccessorTable;
 
   public static com.google.protobuf.Descriptors.FileDescriptor
       getDescriptor() {
@@ -36,14 +56,25 @@ public final class InventoryProto {
     java.lang.String[] descriptorData = {
       "\n\017inventory.proto\022\026selfcheckout.inventor" +
       "y\"\033\n\014StockRequest\022\013\n\003sku\030\001 \001(\t\"\033\n\rStockR" +
-      "esponse\022\n\n\002ok\030\001 \001(\0102\320\001\n\020InventoryService" +
-      "\022]\n\016DecrementStock\022$.selfcheckout.invent" +
-      "ory.StockRequest\032%.selfcheckout.inventor" +
-      "y.StockResponse\022]\n\016IncrementStock\022$.self" +
-      "checkout.inventory.StockRequest\032%.selfch" +
-      "eckout.inventory.StockResponseB3\n\037com.se" +
-      "lfcheckout.grpc.inventoryB\016InventoryProt" +
-      "oP\001b\006proto3"
+      "esponse\022\n\n\002ok\030\001 \001(\010\"*\n\tStockLine\022\013\n\003sku\030" +
+      "\001 \001(\t\022\020\n\010quantity\030\002 \001(\005\"E\n\021BatchStockReq" +
+      "uest\0220\n\005lines\030\001 \003(\0132!.selfcheckout.inven" +
+      "tory.StockLine\"-\n\013StockResult\022\013\n\003sku\030\001 \001" +
+      "(\t\022\021\n\tfulfilled\030\002 \001(\005\"J\n\022BatchStockRespo" +
+      "nse\0224\n\007results\030\001 \003(\0132#.selfcheckout.inve" +
+      "ntory.StockResult2\254\003\n\020InventoryService\022]" +
+      "\n\016DecrementStock\022$.selfcheckout.inventor" +
+      "y.StockRequest\032%.selfcheckout.inventory." +
+      "StockResponse\022]\n\016IncrementStock\022$.selfch" +
+      "eckout.inventory.StockRequest\032%.selfchec" +
+      "kout.inventory.StockResponse\022l\n\023Decremen" +
+      "tStockBatch\022).selfcheckout.inventory.Bat" +
+      "chStockRequest\032*.selfcheckout.inventory." +
+      "BatchStockResponse\022l\n\023IncrementStockBatc" +
+      "h\022).selfcheckout.inventory.BatchStockReq" +
+      "uest\032*.selfcheckout.inventory.BatchStock" +
+      "ResponseB3\n\037com.selfcheckout.grpc.invent" +
+      "oryB\016InventoryProtoP\001b\006proto3"
     };
     descriptor = com.google.protobuf.Descriptors.FileDescriptor
       .internalBuildGeneratedFileFrom(descriptorData,
@@ -61,6 +92,30 @@ public final class InventoryProto {
       com.google.protobuf.GeneratedMessageV3.FieldAccessorTable(
         internal_static_selfcheckout_inventory_StockResponse_descriptor,
         new java.lang.String[] { "Ok", });
+    internal_static_selfcheckout_inventory_StockLine_descriptor =
+      getDescriptor().getMessageTypes().get(2);
+    internal_static_selfcheckout_inventory_StockLine_fieldAccessorTable = new
+      com.google.protobuf.GeneratedMessageV3.FieldAccessorTable(
+        internal_static_selfcheckout_inventory_StockLine_descriptor,
+        new java.lang.String[] { "Sku", "Quantity", });
+    internal_static_selfcheckout_inventory_BatchStockRequest_descriptor =
+      getDescriptor().getMessageTypes().get(3);
+    internal_static_selfcheckout_inventory_BatchStockRequest_fieldAccessorTable = new
+      com.google.protobuf.GeneratedMessageV3.FieldAccessorTable(
+        internal_static_selfcheckout_inventory_BatchStockRequest_descriptor,
+        new java.lang.String[] { "Lines", });
+    internal_static_selfcheckout_inventory_StockResult_descriptor =
+      getDescriptor().getMessageTypes().get(4);
+    internal_static_selfcheckout_inventory_StockResult_fieldAccessorTable = new
+      com.google.protobuf.GeneratedMessageV3.FieldAccessorTable(
+        internal_static_selfcheckout_inventory_StockResult_descriptor,
+        new java.lang.String[] { "Sku", "Fulfilled", });
+    internal_static_selfcheckout_inventory_BatchStockResponse_descriptor =
+      getDescriptor().getMessageTypes().get(5);
+    internal_static_selfcheckout_inventory_BatchStockResponse_fieldAccessorTable = new
+      com.google.protobuf.GeneratedMessageV3.FieldAccessorTable(
+        internal_static_selfcheckout_inventory_BatchStockResponse_descriptor,
+        new java.lang.String[] { "Results", });
   }
 
   // @@protoc_insertion_point(outer_class_scope)

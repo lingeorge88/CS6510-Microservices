@@ -1,0 +1,196 @@
+# Microservices self-checkout system.
+#
+# Four independently deployable services, EACH WITH ITS OWN Postgres database:
+#   catalog-service   + catalog-db      (catalog_items)
+#   inventory-service + inventory-db    (inventory_stock)
+#   checkout-service  + checkout-db     (transactions, transaction_line_items)
+#   analytics-service + analytics-db    (scan_events, popular_items_snapshot)
+# plus an nginx api-gateway that preserves the flat OpenAPI contract on :8080.
+#
+# Services talk to each other over gRPC (ports 9091/9093/9094); the gateway talks
+# to them over REST (ports 8081/8083/8082/8084). No database is shared.
+#
+# Build the jars on the host first, then build images and start:
+#   mvn -DskipTests package
+#   docker compose up --build
+# The load client targets the gateway: http://localhost:8080
+# A fresh, reseeded set of databases each run: docker compose down -v && docker compose up.
+
+services:
+  # --- Databases (one per service) ------------------------------------------
+  catalog-db:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: catalog
+    volumes:
+      - ./db/catalog/init:/docker-entrypoint-initdb.d:ro
+    ports:
+      - "5441:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d catalog"]
+      interval: 2s
+      timeout: 3s
+      retries: 30
+
+  inventory-db:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: inventory
+    volumes:
+      - ./db/inventory/init:/docker-entrypoint-initdb.d:ro
+    ports:
+      - "5443:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d inventory"]
+      interval: 2s
+      timeout: 3s
+      retries: 30
+
+  checkout-db:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: checkout
+    volumes:
+      - ./db/checkout/init:/docker-entrypoint-initdb.d:ro
+    ports:
+      - "5442:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d checkout"]
+      interval: 2s
+      timeout: 3s
+      retries: 30
+
+  analytics-db:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: analytics
+    volumes:
+      - ./db/analytics/init:/docker-entrypoint-initdb.d:ro
+    ports:
+      - "5444:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d analytics"]
+      interval: 2s
+      timeout: 3s
+      retries: 30
+
+  # --- Services --------------------------------------------------------------
+  catalog-service:
+    build: ./catalog-service
+    environment:
+      DB_HOST: catalog-db
+      DB_PORT: 5432
+      DB_NAME: catalog
+      DB_USER: postgres
+      DB_PASSWORD: postgres
+    ports:
+      - "8081:8081"   # REST
+      - "9091:9091"   # gRPC
+    depends_on:
+      catalog-db:
+        condition: service_healthy
+    # Ready = the REST port is accepting connections (Spring Boot binds Tomcat last,
+    # so this implies the context — and the gRPC server — are up).
+    healthcheck:
+      test: ["CMD", "bash", "-c", "exec 3<>/dev/tcp/localhost/8081"]
+      interval: 3s
+      timeout: 3s
+      retries: 20
+      start_period: 5s
+
+  inventory-service:
+    build: ./inventory-service
+    environment:
+      DB_HOST: inventory-db
+      DB_PORT: 5432
+      DB_NAME: inventory
+      DB_USER: postgres
+      DB_PASSWORD: postgres
+    ports:
+      - "8083:8083"   # REST
+      - "9093:9093"   # gRPC
+    depends_on:
+      inventory-db:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "bash", "-c", "exec 3<>/dev/tcp/localhost/8083"]
+      interval: 3s
+      timeout: 3s
+      retries: 20
+      start_period: 5s
+
+  checkout-service:
+    build: ./checkout-service
+    environment:
+      DB_HOST: checkout-db
+      DB_PORT: 5432
+      DB_NAME: checkout
+      DB_USER: postgres
+      DB_PASSWORD: postgres
+      # gRPC targets of the services Checkout orchestrates.
+      CATALOG_GRPC_TARGET: catalog-service:9091
+      INVENTORY_GRPC_TARGET: inventory-service:9093
+      ANALYTICS_GRPC_TARGET: analytics-service:9094
+    ports:
+      - "8082:8082"   # REST
+    depends_on:
+      checkout-db:
+        condition: service_healthy
+      catalog-service:
+        condition: service_healthy
+      inventory-service:
+        condition: service_healthy
+      analytics-service:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "bash", "-c", "exec 3<>/dev/tcp/localhost/8082"]
+      interval: 3s
+      timeout: 3s
+      retries: 20
+      start_period: 5s
+
+  analytics-service:
+    build: ./analytics-service
+    environment:
+      DB_HOST: analytics-db
+      DB_PORT: 5432
+      DB_NAME: analytics
+      DB_USER: postgres
+      DB_PASSWORD: postgres
+    ports:
+      - "8084:8084"   # REST
+      - "9094:9094"   # gRPC
+    depends_on:
+      analytics-db:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "bash", "-c", "exec 3<>/dev/tcp/localhost/8084"]
+      interval: 3s
+      timeout: 3s
+      retries: 20
+      start_period: 5s
+
+  # --- Gateway ---------------------------------------------------------------
+  api-gateway:
+    build: ./api-gateway
+    ports:
+      - "8080:8080"
+    # Only publish :8080 once every service is actually accepting connections, so
+    # the load client can never hit a service mid-boot (avoids startup-race refusals).
+    depends_on:
+      catalog-service:
+        condition: service_healthy
+      inventory-service:
+        condition: service_healthy
+      checkout-service:
+        condition: service_healthy
+      analytics-service:
+        condition: service_healthy

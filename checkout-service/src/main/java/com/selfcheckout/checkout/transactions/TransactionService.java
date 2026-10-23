@@ -9,8 +9,10 @@ import com.selfcheckout.grpc.analytics.LogScanRequest;
 import com.selfcheckout.grpc.catalog.CatalogServiceGrpc;
 import com.selfcheckout.grpc.catalog.GetItemRequest;
 import com.selfcheckout.grpc.catalog.GetItemResponse;
+import com.selfcheckout.grpc.inventory.BatchStockRequest;
 import com.selfcheckout.grpc.inventory.InventoryServiceGrpc;
-import com.selfcheckout.grpc.inventory.StockRequest;
+import com.selfcheckout.grpc.inventory.StockLine;
+import com.selfcheckout.grpc.inventory.StockResult;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
@@ -159,15 +161,30 @@ public class TransactionService {
             names.put(sku, item.getFound() ? item.getName() : sku);
         }
 
-        // Saga step 1: decrement stock per unit in Inventory. Each decrement is a
-        // durable, atomic, guarded operation in Inventory's own database.
+        // Saga step 1: decrement the WHOLE basket in one gRPC call and one Inventory
+        // transaction. Inventory fulfils each SKU up to available stock (never below
+        // zero) and reports how many units it actually decremented per SKU.
+        BatchStockRequest.Builder batch = BatchStockRequest.newBuilder();
+        for (Map.Entry<String, List<TransactionLineItem>> entry : bySku.entrySet()) {
+            batch.addLines(StockLine.newBuilder()
+                    .setSku(entry.getKey())
+                    .setQuantity(entry.getValue().size())
+                    .build());
+        }
+        Map<String, Integer> fulfilledBySku = new LinkedHashMap<>();
+        for (StockResult result : inventoryStub.decrementStockBatch(batch.build()).getResultsList()) {
+            fulfilledBySku.put(result.getSku(), result.getFulfilled());
+        }
+
+        // Map the per-SKU grants back onto individual units: the first N units of a
+        // SKU are sold, any remainder were oversold and are dropped.
         List<TransactionLineItem> fulfilled = new ArrayList<>(lineItems.size());
         List<TransactionLineItem> unfulfilled = new ArrayList<>();
         for (Map.Entry<String, List<TransactionLineItem>> entry : bySku.entrySet()) {
-            for (TransactionLineItem unit : entry.getValue()) {
-                boolean ok = inventoryStub.decrementStock(
-                        StockRequest.newBuilder().setSku(entry.getKey()).build()).getOk();
-                (ok ? fulfilled : unfulfilled).add(unit);
+            int grant = fulfilledBySku.getOrDefault(entry.getKey(), 0);
+            List<TransactionLineItem> units = entry.getValue();
+            for (int i = 0; i < units.size(); i++) {
+                (i < grant ? fulfilled : unfulfilled).add(units.get(i));
             }
         }
 
@@ -192,7 +209,7 @@ public class TransactionService {
                 transactionRepository.save(tx);
             });
         } catch (RuntimeException e) {
-            compensate(fulfilled);
+            compensate(fulfilledBySku);
             throw e;
         }
 
@@ -225,15 +242,24 @@ public class TransactionService {
         }
     }
 
-    /** Returns every decremented unit to Inventory after a failed local commit. */
-    private void compensate(List<TransactionLineItem> fulfilled) {
-        for (TransactionLineItem unit : fulfilled) {
-            try {
-                inventoryStub.incrementStock(StockRequest.newBuilder().setSku(unit.getSku()).build());
-            } catch (RuntimeException e) {
-                log.error("Compensation failed for sku {} — stock may be understated until reconciled",
-                        unit.getSku(), e);
+    /** Returns every decremented unit to Inventory (one call) after a failed local commit. */
+    private void compensate(Map<String, Integer> fulfilledBySku) {
+        BatchStockRequest.Builder batch = BatchStockRequest.newBuilder();
+        for (Map.Entry<String, Integer> entry : fulfilledBySku.entrySet()) {
+            if (entry.getValue() > 0) {
+                batch.addLines(StockLine.newBuilder()
+                        .setSku(entry.getKey())
+                        .setQuantity(entry.getValue())
+                        .build());
             }
+        }
+        if (batch.getLinesCount() == 0) {
+            return;
+        }
+        try {
+            inventoryStub.incrementStockBatch(batch.build());
+        } catch (RuntimeException e) {
+            log.error("Compensation failed — stock may be understated until reconciled", e);
         }
     }
 

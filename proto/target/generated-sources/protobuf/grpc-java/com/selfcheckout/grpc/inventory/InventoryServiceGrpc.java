@@ -4,10 +4,11 @@ import static io.grpc.MethodDescriptor.generateFullMethodName;
 
 /**
  * <pre>
- * Inventory owns stock. Checkout drives it as the saga orchestrator at completion:
- * DecrementStock per sold unit, and IncrementStock to compensate if checkout's own
- * local commit fails after the decrements. The decrement is an atomic guarded
- * UPDATE, so stock can never go negative even under concurrent completions.
+ * Inventory owns stock. Checkout drives it as the saga orchestrator at completion.
+ * The BATCH calls are the hot path: a whole basket is decremented in ONE gRPC call
+ * and ONE local transaction (rows locked in SKU order to avoid deadlocks), instead
+ * of a round-trip per unit. Stock can never go negative even under concurrent
+ * completions. The single-unit calls are kept for completeness/testing.
  * </pre>
  */
 @javax.annotation.Generated(
@@ -83,6 +84,68 @@ public final class InventoryServiceGrpc {
     return getIncrementStockMethod;
   }
 
+  private static volatile io.grpc.MethodDescriptor<com.selfcheckout.grpc.inventory.BatchStockRequest,
+      com.selfcheckout.grpc.inventory.BatchStockResponse> getDecrementStockBatchMethod;
+
+  @io.grpc.stub.annotations.RpcMethod(
+      fullMethodName = SERVICE_NAME + '/' + "DecrementStockBatch",
+      requestType = com.selfcheckout.grpc.inventory.BatchStockRequest.class,
+      responseType = com.selfcheckout.grpc.inventory.BatchStockResponse.class,
+      methodType = io.grpc.MethodDescriptor.MethodType.UNARY)
+  public static io.grpc.MethodDescriptor<com.selfcheckout.grpc.inventory.BatchStockRequest,
+      com.selfcheckout.grpc.inventory.BatchStockResponse> getDecrementStockBatchMethod() {
+    io.grpc.MethodDescriptor<com.selfcheckout.grpc.inventory.BatchStockRequest, com.selfcheckout.grpc.inventory.BatchStockResponse> getDecrementStockBatchMethod;
+    if ((getDecrementStockBatchMethod = InventoryServiceGrpc.getDecrementStockBatchMethod) == null) {
+      synchronized (InventoryServiceGrpc.class) {
+        if ((getDecrementStockBatchMethod = InventoryServiceGrpc.getDecrementStockBatchMethod) == null) {
+          InventoryServiceGrpc.getDecrementStockBatchMethod = getDecrementStockBatchMethod =
+              io.grpc.MethodDescriptor.<com.selfcheckout.grpc.inventory.BatchStockRequest, com.selfcheckout.grpc.inventory.BatchStockResponse>newBuilder()
+              .setType(io.grpc.MethodDescriptor.MethodType.UNARY)
+              .setFullMethodName(generateFullMethodName(SERVICE_NAME, "DecrementStockBatch"))
+              .setSampledToLocalTracing(true)
+              .setRequestMarshaller(io.grpc.protobuf.ProtoUtils.marshaller(
+                  com.selfcheckout.grpc.inventory.BatchStockRequest.getDefaultInstance()))
+              .setResponseMarshaller(io.grpc.protobuf.ProtoUtils.marshaller(
+                  com.selfcheckout.grpc.inventory.BatchStockResponse.getDefaultInstance()))
+              .setSchemaDescriptor(new InventoryServiceMethodDescriptorSupplier("DecrementStockBatch"))
+              .build();
+        }
+      }
+    }
+    return getDecrementStockBatchMethod;
+  }
+
+  private static volatile io.grpc.MethodDescriptor<com.selfcheckout.grpc.inventory.BatchStockRequest,
+      com.selfcheckout.grpc.inventory.BatchStockResponse> getIncrementStockBatchMethod;
+
+  @io.grpc.stub.annotations.RpcMethod(
+      fullMethodName = SERVICE_NAME + '/' + "IncrementStockBatch",
+      requestType = com.selfcheckout.grpc.inventory.BatchStockRequest.class,
+      responseType = com.selfcheckout.grpc.inventory.BatchStockResponse.class,
+      methodType = io.grpc.MethodDescriptor.MethodType.UNARY)
+  public static io.grpc.MethodDescriptor<com.selfcheckout.grpc.inventory.BatchStockRequest,
+      com.selfcheckout.grpc.inventory.BatchStockResponse> getIncrementStockBatchMethod() {
+    io.grpc.MethodDescriptor<com.selfcheckout.grpc.inventory.BatchStockRequest, com.selfcheckout.grpc.inventory.BatchStockResponse> getIncrementStockBatchMethod;
+    if ((getIncrementStockBatchMethod = InventoryServiceGrpc.getIncrementStockBatchMethod) == null) {
+      synchronized (InventoryServiceGrpc.class) {
+        if ((getIncrementStockBatchMethod = InventoryServiceGrpc.getIncrementStockBatchMethod) == null) {
+          InventoryServiceGrpc.getIncrementStockBatchMethod = getIncrementStockBatchMethod =
+              io.grpc.MethodDescriptor.<com.selfcheckout.grpc.inventory.BatchStockRequest, com.selfcheckout.grpc.inventory.BatchStockResponse>newBuilder()
+              .setType(io.grpc.MethodDescriptor.MethodType.UNARY)
+              .setFullMethodName(generateFullMethodName(SERVICE_NAME, "IncrementStockBatch"))
+              .setSampledToLocalTracing(true)
+              .setRequestMarshaller(io.grpc.protobuf.ProtoUtils.marshaller(
+                  com.selfcheckout.grpc.inventory.BatchStockRequest.getDefaultInstance()))
+              .setResponseMarshaller(io.grpc.protobuf.ProtoUtils.marshaller(
+                  com.selfcheckout.grpc.inventory.BatchStockResponse.getDefaultInstance()))
+              .setSchemaDescriptor(new InventoryServiceMethodDescriptorSupplier("IncrementStockBatch"))
+              .build();
+        }
+      }
+    }
+    return getIncrementStockBatchMethod;
+  }
+
   /**
    * Creates a new async stub that supports all call types for the service
    */
@@ -129,10 +192,11 @@ public final class InventoryServiceGrpc {
 
   /**
    * <pre>
-   * Inventory owns stock. Checkout drives it as the saga orchestrator at completion:
-   * DecrementStock per sold unit, and IncrementStock to compensate if checkout's own
-   * local commit fails after the decrements. The decrement is an atomic guarded
-   * UPDATE, so stock can never go negative even under concurrent completions.
+   * Inventory owns stock. Checkout drives it as the saga orchestrator at completion.
+   * The BATCH calls are the hot path: a whole basket is decremented in ONE gRPC call
+   * and ONE local transaction (rows locked in SKU order to avoid deadlocks), instead
+   * of a round-trip per unit. Stock can never go negative even under concurrent
+   * completions. The single-unit calls are kept for completeness/testing.
    * </pre>
    */
   public interface AsyncService {
@@ -150,15 +214,37 @@ public final class InventoryServiceGrpc {
         io.grpc.stub.StreamObserver<com.selfcheckout.grpc.inventory.StockResponse> responseObserver) {
       io.grpc.stub.ServerCalls.asyncUnimplementedUnaryCall(getIncrementStockMethod(), responseObserver);
     }
+
+    /**
+     * <pre>
+     * Decrement up to `quantity` units per SKU; reports how many were actually
+     * fulfilled (0..quantity) when stock runs short.
+     * </pre>
+     */
+    default void decrementStockBatch(com.selfcheckout.grpc.inventory.BatchStockRequest request,
+        io.grpc.stub.StreamObserver<com.selfcheckout.grpc.inventory.BatchStockResponse> responseObserver) {
+      io.grpc.stub.ServerCalls.asyncUnimplementedUnaryCall(getDecrementStockBatchMethod(), responseObserver);
+    }
+
+    /**
+     * <pre>
+     * Give `quantity` units per SKU back (saga compensation after a failed commit).
+     * </pre>
+     */
+    default void incrementStockBatch(com.selfcheckout.grpc.inventory.BatchStockRequest request,
+        io.grpc.stub.StreamObserver<com.selfcheckout.grpc.inventory.BatchStockResponse> responseObserver) {
+      io.grpc.stub.ServerCalls.asyncUnimplementedUnaryCall(getIncrementStockBatchMethod(), responseObserver);
+    }
   }
 
   /**
    * Base class for the server implementation of the service InventoryService.
    * <pre>
-   * Inventory owns stock. Checkout drives it as the saga orchestrator at completion:
-   * DecrementStock per sold unit, and IncrementStock to compensate if checkout's own
-   * local commit fails after the decrements. The decrement is an atomic guarded
-   * UPDATE, so stock can never go negative even under concurrent completions.
+   * Inventory owns stock. Checkout drives it as the saga orchestrator at completion.
+   * The BATCH calls are the hot path: a whole basket is decremented in ONE gRPC call
+   * and ONE local transaction (rows locked in SKU order to avoid deadlocks), instead
+   * of a round-trip per unit. Stock can never go negative even under concurrent
+   * completions. The single-unit calls are kept for completeness/testing.
    * </pre>
    */
   public static abstract class InventoryServiceImplBase
@@ -172,10 +258,11 @@ public final class InventoryServiceGrpc {
   /**
    * A stub to allow clients to do asynchronous rpc calls to service InventoryService.
    * <pre>
-   * Inventory owns stock. Checkout drives it as the saga orchestrator at completion:
-   * DecrementStock per sold unit, and IncrementStock to compensate if checkout's own
-   * local commit fails after the decrements. The decrement is an atomic guarded
-   * UPDATE, so stock can never go negative even under concurrent completions.
+   * Inventory owns stock. Checkout drives it as the saga orchestrator at completion.
+   * The BATCH calls are the hot path: a whole basket is decremented in ONE gRPC call
+   * and ONE local transaction (rows locked in SKU order to avoid deadlocks), instead
+   * of a round-trip per unit. Stock can never go negative even under concurrent
+   * completions. The single-unit calls are kept for completeness/testing.
    * </pre>
    */
   public static final class InventoryServiceStub
@@ -206,15 +293,39 @@ public final class InventoryServiceGrpc {
       io.grpc.stub.ClientCalls.asyncUnaryCall(
           getChannel().newCall(getIncrementStockMethod(), getCallOptions()), request, responseObserver);
     }
+
+    /**
+     * <pre>
+     * Decrement up to `quantity` units per SKU; reports how many were actually
+     * fulfilled (0..quantity) when stock runs short.
+     * </pre>
+     */
+    public void decrementStockBatch(com.selfcheckout.grpc.inventory.BatchStockRequest request,
+        io.grpc.stub.StreamObserver<com.selfcheckout.grpc.inventory.BatchStockResponse> responseObserver) {
+      io.grpc.stub.ClientCalls.asyncUnaryCall(
+          getChannel().newCall(getDecrementStockBatchMethod(), getCallOptions()), request, responseObserver);
+    }
+
+    /**
+     * <pre>
+     * Give `quantity` units per SKU back (saga compensation after a failed commit).
+     * </pre>
+     */
+    public void incrementStockBatch(com.selfcheckout.grpc.inventory.BatchStockRequest request,
+        io.grpc.stub.StreamObserver<com.selfcheckout.grpc.inventory.BatchStockResponse> responseObserver) {
+      io.grpc.stub.ClientCalls.asyncUnaryCall(
+          getChannel().newCall(getIncrementStockBatchMethod(), getCallOptions()), request, responseObserver);
+    }
   }
 
   /**
    * A stub to allow clients to do synchronous rpc calls to service InventoryService.
    * <pre>
-   * Inventory owns stock. Checkout drives it as the saga orchestrator at completion:
-   * DecrementStock per sold unit, and IncrementStock to compensate if checkout's own
-   * local commit fails after the decrements. The decrement is an atomic guarded
-   * UPDATE, so stock can never go negative even under concurrent completions.
+   * Inventory owns stock. Checkout drives it as the saga orchestrator at completion.
+   * The BATCH calls are the hot path: a whole basket is decremented in ONE gRPC call
+   * and ONE local transaction (rows locked in SKU order to avoid deadlocks), instead
+   * of a round-trip per unit. Stock can never go negative even under concurrent
+   * completions. The single-unit calls are kept for completeness/testing.
    * </pre>
    */
   public static final class InventoryServiceBlockingStub
@@ -243,15 +354,37 @@ public final class InventoryServiceGrpc {
       return io.grpc.stub.ClientCalls.blockingUnaryCall(
           getChannel(), getIncrementStockMethod(), getCallOptions(), request);
     }
+
+    /**
+     * <pre>
+     * Decrement up to `quantity` units per SKU; reports how many were actually
+     * fulfilled (0..quantity) when stock runs short.
+     * </pre>
+     */
+    public com.selfcheckout.grpc.inventory.BatchStockResponse decrementStockBatch(com.selfcheckout.grpc.inventory.BatchStockRequest request) {
+      return io.grpc.stub.ClientCalls.blockingUnaryCall(
+          getChannel(), getDecrementStockBatchMethod(), getCallOptions(), request);
+    }
+
+    /**
+     * <pre>
+     * Give `quantity` units per SKU back (saga compensation after a failed commit).
+     * </pre>
+     */
+    public com.selfcheckout.grpc.inventory.BatchStockResponse incrementStockBatch(com.selfcheckout.grpc.inventory.BatchStockRequest request) {
+      return io.grpc.stub.ClientCalls.blockingUnaryCall(
+          getChannel(), getIncrementStockBatchMethod(), getCallOptions(), request);
+    }
   }
 
   /**
    * A stub to allow clients to do ListenableFuture-style rpc calls to service InventoryService.
    * <pre>
-   * Inventory owns stock. Checkout drives it as the saga orchestrator at completion:
-   * DecrementStock per sold unit, and IncrementStock to compensate if checkout's own
-   * local commit fails after the decrements. The decrement is an atomic guarded
-   * UPDATE, so stock can never go negative even under concurrent completions.
+   * Inventory owns stock. Checkout drives it as the saga orchestrator at completion.
+   * The BATCH calls are the hot path: a whole basket is decremented in ONE gRPC call
+   * and ONE local transaction (rows locked in SKU order to avoid deadlocks), instead
+   * of a round-trip per unit. Stock can never go negative even under concurrent
+   * completions. The single-unit calls are kept for completeness/testing.
    * </pre>
    */
   public static final class InventoryServiceFutureStub
@@ -282,10 +415,35 @@ public final class InventoryServiceGrpc {
       return io.grpc.stub.ClientCalls.futureUnaryCall(
           getChannel().newCall(getIncrementStockMethod(), getCallOptions()), request);
     }
+
+    /**
+     * <pre>
+     * Decrement up to `quantity` units per SKU; reports how many were actually
+     * fulfilled (0..quantity) when stock runs short.
+     * </pre>
+     */
+    public com.google.common.util.concurrent.ListenableFuture<com.selfcheckout.grpc.inventory.BatchStockResponse> decrementStockBatch(
+        com.selfcheckout.grpc.inventory.BatchStockRequest request) {
+      return io.grpc.stub.ClientCalls.futureUnaryCall(
+          getChannel().newCall(getDecrementStockBatchMethod(), getCallOptions()), request);
+    }
+
+    /**
+     * <pre>
+     * Give `quantity` units per SKU back (saga compensation after a failed commit).
+     * </pre>
+     */
+    public com.google.common.util.concurrent.ListenableFuture<com.selfcheckout.grpc.inventory.BatchStockResponse> incrementStockBatch(
+        com.selfcheckout.grpc.inventory.BatchStockRequest request) {
+      return io.grpc.stub.ClientCalls.futureUnaryCall(
+          getChannel().newCall(getIncrementStockBatchMethod(), getCallOptions()), request);
+    }
   }
 
   private static final int METHODID_DECREMENT_STOCK = 0;
   private static final int METHODID_INCREMENT_STOCK = 1;
+  private static final int METHODID_DECREMENT_STOCK_BATCH = 2;
+  private static final int METHODID_INCREMENT_STOCK_BATCH = 3;
 
   private static final class MethodHandlers<Req, Resp> implements
       io.grpc.stub.ServerCalls.UnaryMethod<Req, Resp>,
@@ -311,6 +469,14 @@ public final class InventoryServiceGrpc {
         case METHODID_INCREMENT_STOCK:
           serviceImpl.incrementStock((com.selfcheckout.grpc.inventory.StockRequest) request,
               (io.grpc.stub.StreamObserver<com.selfcheckout.grpc.inventory.StockResponse>) responseObserver);
+          break;
+        case METHODID_DECREMENT_STOCK_BATCH:
+          serviceImpl.decrementStockBatch((com.selfcheckout.grpc.inventory.BatchStockRequest) request,
+              (io.grpc.stub.StreamObserver<com.selfcheckout.grpc.inventory.BatchStockResponse>) responseObserver);
+          break;
+        case METHODID_INCREMENT_STOCK_BATCH:
+          serviceImpl.incrementStockBatch((com.selfcheckout.grpc.inventory.BatchStockRequest) request,
+              (io.grpc.stub.StreamObserver<com.selfcheckout.grpc.inventory.BatchStockResponse>) responseObserver);
           break;
         default:
           throw new AssertionError();
@@ -344,6 +510,20 @@ public final class InventoryServiceGrpc {
               com.selfcheckout.grpc.inventory.StockRequest,
               com.selfcheckout.grpc.inventory.StockResponse>(
                 service, METHODID_INCREMENT_STOCK)))
+        .addMethod(
+          getDecrementStockBatchMethod(),
+          io.grpc.stub.ServerCalls.asyncUnaryCall(
+            new MethodHandlers<
+              com.selfcheckout.grpc.inventory.BatchStockRequest,
+              com.selfcheckout.grpc.inventory.BatchStockResponse>(
+                service, METHODID_DECREMENT_STOCK_BATCH)))
+        .addMethod(
+          getIncrementStockBatchMethod(),
+          io.grpc.stub.ServerCalls.asyncUnaryCall(
+            new MethodHandlers<
+              com.selfcheckout.grpc.inventory.BatchStockRequest,
+              com.selfcheckout.grpc.inventory.BatchStockResponse>(
+                service, METHODID_INCREMENT_STOCK_BATCH)))
         .build();
   }
 
@@ -394,6 +574,8 @@ public final class InventoryServiceGrpc {
               .setSchemaDescriptor(new InventoryServiceFileDescriptorSupplier())
               .addMethod(getDecrementStockMethod())
               .addMethod(getIncrementStockMethod())
+              .addMethod(getDecrementStockBatchMethod())
+              .addMethod(getIncrementStockBatchMethod())
               .build();
         }
       }

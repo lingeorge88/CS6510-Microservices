@@ -6,13 +6,20 @@ option java_multiple_files = true;
 option java_package = "com.selfcheckout.grpc.inventory";
 option java_outer_classname = "InventoryProto";
 
-// Inventory owns stock. Checkout drives it as the saga orchestrator at completion:
-// DecrementStock per sold unit, and IncrementStock to compensate if checkout's own
-// local commit fails after the decrements. The decrement is an atomic guarded
-// UPDATE, so stock can never go negative even under concurrent completions.
+// Inventory owns stock. Checkout drives it as the saga orchestrator at completion.
+// The BATCH calls are the hot path: a whole basket is decremented in ONE gRPC call
+// and ONE local transaction (rows locked in SKU order to avoid deadlocks), instead
+// of a round-trip per unit. Stock can never go negative even under concurrent
+// completions. The single-unit calls are kept for completeness/testing.
 service InventoryService {
   rpc DecrementStock (StockRequest) returns (StockResponse);
   rpc IncrementStock (StockRequest) returns (StockResponse);
+
+  // Decrement up to `quantity` units per SKU; reports how many were actually
+  // fulfilled (0..quantity) when stock runs short.
+  rpc DecrementStockBatch (BatchStockRequest) returns (BatchStockResponse);
+  // Give `quantity` units per SKU back (saga compensation after a failed commit).
+  rpc IncrementStockBatch (BatchStockRequest) returns (BatchStockResponse);
 }
 
 message StockRequest {
@@ -23,4 +30,24 @@ message StockResponse {
   // DecrementStock: true if a unit was decremented, false if already out of stock.
   // IncrementStock: true once the compensation has been applied.
   bool ok = 1;
+}
+
+message StockLine {
+  string sku = 1;
+  int32 quantity = 2;
+}
+
+message BatchStockRequest {
+  repeated StockLine lines = 1;
+}
+
+message StockResult {
+  string sku = 1;
+  // How many units were decremented (DecrementStockBatch) or returned
+  // (IncrementStockBatch) for this SKU.
+  int32 fulfilled = 2;
+}
+
+message BatchStockResponse {
+  repeated StockResult results = 1;
 }
