@@ -1,12 +1,10 @@
 # CS6510 — Self-Checkout: Microservices Architecture
 
 An independently-deployable **microservices** implementation of the self-checkout
-API. Each service owns its **own database**; services talk to each other over
+backend system. Each service owns its **own database**; services communicate via
 **gRPC**; and the one API request that must update two data stores — completing a
 transaction — is coordinated by an **orchestrated saga**. The system is reached
-through an nginx API gateway on `http://localhost:8080`, so the unmodified course
-load client drives it exactly as it drove the earlier monolith / service-based
-versions.
+through an nginx API gateway on `http://localhost:8080`.
 
 ## Tech stack
 
@@ -110,11 +108,10 @@ docker compose down        # safe stop: removes containers + network, keeps noth
 # docker compose down -v    # also wipe the databases (full clean slate)
 ```
 
-## Performance — and why it is slower than earlier weeks
+## Performance 
 
 Measured on the same hardware with the same load client. Reports are in
-[`load-test-results/`](load-test-results). **All runs: 0 errors; stock never went
-negative; the ranking stayed stable.**
+[`load-test-results/`](load-test-results). 
 
 | Scenario | Metric | service-based | **microservices** |
 |---|---|---:|---:|
@@ -125,9 +122,7 @@ negative; the ranking stayed stable.**
 | | SCAN p99 | 60.8 ms | **69.4 ms** |
 | | COMPLETE p99 | 66.7 ms | **518.4 ms** |
 
-Throughput roughly halved at low load, and the completion tail blew out ~8× under
-stress. This is the **expected, inherent cost of the microservices decomposition**,
-not a defect — the same work is now spread across process and database boundaries:
+Potential Suspected Causes for Degraded Performance:
 
 1. **Network hops replace in-process calls.** In the service-based version, a scan
    read the catalog price and logged the scan with local method calls against one
