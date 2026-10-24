@@ -43,7 +43,7 @@ nothing is shared — there is no shared database and no shared persistence libr
 | **Checkout** | `checkout_db` — `transactions`, `transaction_line_items` | `POST /transactions`, `/items`, `/complete`, `GET /transactions/{id}` | — | Catalog, Inventory, Analytics |
 | **Analytics** | `analytics_db` — `scan_events`, `popular_items_snapshot` | `GET /analytics/popular-items` | `LogScan` | — |
 
-### Request flow — a complete checkout, end to end
+### Tracing Through a Transaction
 
 ```mermaid
 sequenceDiagram
