@@ -37,10 +37,13 @@
              brand-new Boot 4.1 gRPC auto-configuration. -->
         <grpc.version>1.68.1</grpc.version>
         <protobuf.version>3.25.5</protobuf.version>
+        <!-- No test suite in this project: skip compiling and running tests entirely. -->
+        <maven.test.skip>true</maven.test.skip>
     </properties>
 
     <modules>
         <module>proto</module>
+        <module>events</module>
         <module>catalog-service</module>
         <module>inventory-service</module>
         <module>checkout-service</module>

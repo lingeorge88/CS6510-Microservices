@@ -1,6 +1,5 @@
-com/selfcheckout/catalog/CatalogApplication.class
-com/selfcheckout/catalog/grpc/GrpcServerLifecycle.class
-com/selfcheckout/catalog/data/CatalogItem.class
 com/selfcheckout/catalog/data/CatalogItemRepository.class
+com/selfcheckout/catalog/CatalogApplication.class
+com/selfcheckout/catalog/data/CatalogItem.class
+com/selfcheckout/catalog/CatalogPublisher.class
 com/selfcheckout/catalog/CatalogController.class
-com/selfcheckout/catalog/grpc/CatalogGrpcService.class

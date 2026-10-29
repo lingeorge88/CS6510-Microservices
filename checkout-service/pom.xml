@@ -12,13 +12,13 @@
     <artifactId>checkout-service</artifactId>
     <packaging>jar</packaging>
     <name>checkout-service</name>
-    <description>Microservice: the checkout lifecycle and saga orchestrator. Serves /transactions*; owns checkout_db;
-        gRPC client of catalog, inventory, and analytics.</description>
+    <description>Microservice: the checkout lifecycle. Serves /transactions*; owns checkout_db; keeps a local
+        catalog replica from Kafka and publishes scan/completion events via a transactional outbox.</description>
 
     <dependencies>
         <dependency>
             <groupId>com.selfcheckout</groupId>
-            <artifactId>proto</artifactId>
+            <artifactId>events</artifactId>
             <version>0.0.1-SNAPSHOT</version>
         </dependency>
         <dependency>

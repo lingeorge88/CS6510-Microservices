@@ -1,0 +1,12 @@
+com/selfcheckout/events/CatalogItemEvent.class
+com/selfcheckout/events/outbox/OutboxRelay$Row.class
+com/selfcheckout/events/KafkaTopicsConfig.class
+com/selfcheckout/events/outbox/OutboxRelay.class
+com/selfcheckout/events/TransactionCompleted.class
+com/selfcheckout/events/outbox/Outbox.class
+com/selfcheckout/events/TransactionCompleted$Line.class
+com/selfcheckout/events/ItemScanned.class
+com/selfcheckout/events/Topics.class
+com/selfcheckout/events/StockShortfall.class
+com/selfcheckout/events/StockShortfall$Line.class
+com/selfcheckout/events/outbox/OutboxConfig.class

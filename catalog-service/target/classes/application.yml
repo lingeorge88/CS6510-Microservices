@@ -1,13 +1,12 @@
 server:
   port: ${SERVER_PORT:8081}
 
-grpc:
-  server:
-    port: ${GRPC_PORT:9091}
-
 spring:
   application:
     name: catalog-service
+  threads:
+    virtual:
+      enabled: true          # Tomcat request threads are virtual threads; blocking JDBC is cheap
   datasource:
     # Catalog's OWN database. Host defaults to localhost for bare-JVM runs;
     # docker-compose sets DB_HOST=catalog-db.
@@ -24,3 +23,10 @@ spring:
       ddl-auto: none
     open-in-view: false
     show-sql: false
+  kafka:
+    bootstrap-servers: ${KAFKA_BOOTSTRAP_SERVERS:localhost:9092}
+    producer:
+      acks: all              # wait until the broker has durably stored the message
+      properties:
+        enable.idempotence: true   # producer retries can't create duplicates in the log
+        linger.ms: 5               # wait up to 5 ms to batch sends together

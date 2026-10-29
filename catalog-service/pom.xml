@@ -12,12 +12,12 @@
     <artifactId>catalog-service</artifactId>
     <packaging>jar</packaging>
     <name>catalog-service</name>
-    <description>Microservice: product reference data. REST GET /items; gRPC GetItem; owns catalog_db.</description>
+    <description>Microservice: product catalog. REST GET /items; publishes the catalog to Kafka; owns catalog_db.</description>
 
     <dependencies>
         <dependency>
             <groupId>com.selfcheckout</groupId>
-            <artifactId>proto</artifactId>
+            <artifactId>events</artifactId>
             <version>0.0.1-SNAPSHOT</version>
         </dependency>
         <dependency>

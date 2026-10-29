@@ -1,4 +1,4 @@
-# Runtime image for the Checkout Service (saga orchestrator; no gRPC server, only clients).
+# Runtime image for the Checkout Service (REST only; talks to other services via Kafka).
 FROM eclipse-temurin:21-jre
 WORKDIR /app
 COPY target/*-SNAPSHOT.jar app.jar
