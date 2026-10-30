@@ -138,9 +138,6 @@ sequenceDiagram
     K--)CO: 15. remove unfulfilled units from the transaction
 ```
 
-Solid arrows are synchronous; open arrows are asynchronous events. Steps 7–8 and
-12–15 happen after the client already has its response.
-
 **Correctness Considerations:**
 
 - **Transactional outbox.** Events are written to an `outbox` table in the same DB
