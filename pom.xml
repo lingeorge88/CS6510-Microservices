@@ -15,34 +15,28 @@
     <version>0.0.1-SNAPSHOT</version>
     <packaging>pom</packaging>
     <name>microservices</name>
-    <description>Microservices implementation of the self-checkout API: four independently deployable
-        services, each with its OWN database, coordinated over gRPC with an orchestrated saga.</description>
+    <description>Event-driven microservices implementation of the self-checkout API: four independently
+        deployable services, each with its OWN database, communicating only through Kafka events.</description>
 
     <!--
       Four independently deployable microservices, each owning its own Postgres
-      database. Services never share a database or a persistence library; the only
-      shared module is `proto`, which carries the gRPC CONTRACTS (.proto) used for
-      synchronous inter-service calls. Cross-service multi-store writes (the
-      `complete` flow) are coordinated by an orchestrated saga in checkout-service.
+      database. Services never share a database or call each other; all
+      inter-service communication is asynchronous Kafka events. The only shared
+      module is `events`, which carries the event CONTRACTS (JSON records + topic
+      names) and the transactional-outbox plumbing. The cross-service `complete`
+      flow is a choreographed saga (transaction-completed -> stock-shortfall).
 
-      Build the jars on the host first, then build images and start:
-        mvn -DskipTests package
-        docker compose up (with the build flag)
+      Build and start everything (fresh databases + topics):
+        ./start.sh
       The load client targets the gateway: http://localhost:8080
     -->
     <properties>
         <java.version>21</java.version>
-        <!-- gRPC/protobuf pinned to a known-good classic pairing, overriding the
-             Spring Boot BOM, so we wire gRPC explicitly rather than depend on the
-             brand-new Boot 4.1 gRPC auto-configuration. -->
-        <grpc.version>1.68.1</grpc.version>
-        <protobuf.version>3.25.5</protobuf.version>
         <!-- No test suite in this project: skip compiling and running tests entirely. -->
         <maven.test.skip>true</maven.test.skip>
     </properties>
 
     <modules>
-        <module>proto</module>
         <module>events</module>
         <module>catalog-service</module>
         <module>inventory-service</module>

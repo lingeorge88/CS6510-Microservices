@@ -1,22 +1,63 @@
-# Microservices self-checkout system.
+# Event-driven microservices self-checkout system.
 #
 # Four independently deployable services, EACH WITH ITS OWN Postgres database:
 #   catalog-service   + catalog-db      (catalog_items)
-#   inventory-service + inventory-db    (inventory_stock)
-#   checkout-service  + checkout-db     (transactions, transaction_line_items)
+#   inventory-service + inventory-db    (inventory_stock, processed_transactions, outbox)
+#   checkout-service  + checkout-db     (transactions, transaction_line_items, outbox, processed_events)
 #   analytics-service + analytics-db    (scan_events, popular_items_snapshot)
-# plus an nginx api-gateway that preserves the flat OpenAPI contract on :8080.
+# plus an nginx api-gateway that preserves the flat OpenAPI contract on :8080,
+# a Kafka broker that carries ALL inter-service communication, and Kafka UI.
 #
-# Services talk to each other over gRPC (ports 9091/9093/9094); the gateway talks
-# to them over REST (ports 8081/8083/8082/8084). No database is shared.
+# Services never call each other; they publish/consume Kafka events:
+#   catalog.items                   catalog   -> checkout   (compacted price/name snapshot)
+#   checkout.item-scanned           checkout  -> analytics  (popular items)
+#   checkout.transaction-completed  checkout  -> inventory  (stock decrement)
+#   inventory.stock-shortfall       inventory -> checkout   (saga compensation)
 #
-# Build the jars on the host first, then build images and start:
-#   mvn -DskipTests package
-#   docker compose up --build
-# The load client targets the gateway: http://localhost:8080
-# A fresh, reseeded set of databases each run: docker compose down -v && docker compose up.
+# Build + start with fresh databases and topics:   ./start.sh
+# Stop:                                            docker compose down
+# Load client target: http://localhost:8080    Kafka UI: http://localhost:8090
 
 services:
+  # --- Message broker (single-node KRaft, no ZooKeeper) ----------------------
+  kafka:
+    image: apache/kafka:3.9.0
+    environment:
+      KAFKA_NODE_ID: 1
+      KAFKA_PROCESS_ROLES: broker,controller
+      KAFKA_LISTENERS: PLAINTEXT://:9092,CONTROLLER://:9093
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka:9092
+      KAFKA_CONTROLLER_LISTENER_NAMES: CONTROLLER
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: CONTROLLER:PLAINTEXT,PLAINTEXT:PLAINTEXT
+      KAFKA_CONTROLLER_QUORUM_VOTERS: 1@kafka:9093
+      # Single broker: internal topics can only have one replica.
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+      KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR: 1
+      KAFKA_TRANSACTION_STATE_LOG_MIN_ISR: 1
+      # Don't delay the first consumer-group rebalance (default 3s) at startup.
+      KAFKA_GROUP_INITIAL_REBALANCE_DELAY_MS: 0
+      # Topics are declared by the services (KafkaTopicsConfig), with explicit
+      # partitions and compaction — never silently auto-created with defaults.
+      KAFKA_AUTO_CREATE_TOPICS_ENABLE: "false"
+    healthcheck:
+      test: ["CMD-SHELL", "/opt/kafka/bin/kafka-broker-api-versions.sh --bootstrap-server localhost:9092 > /dev/null"]
+      interval: 3s
+      timeout: 10s
+      retries: 30
+      start_period: 10s
+
+  # Web UI for inspecting topics, messages, consumer groups and lag.
+  kafka-ui:
+    image: kafbat/kafka-ui:v1.2.0
+    environment:
+      KAFKA_CLUSTERS_0_NAME: selfcheckout
+      KAFKA_CLUSTERS_0_BOOTSTRAPSERVERS: kafka:9092
+    ports:
+      - "8090:8080"
+    depends_on:
+      kafka:
+        condition: service_healthy
+
   # --- Databases (one per service) ------------------------------------------
   catalog-db:
     image: postgres:16-alpine
@@ -85,20 +126,23 @@ services:
   # --- Services --------------------------------------------------------------
   catalog-service:
     build: ./catalog-service
+    restart: on-failure
     environment:
       DB_HOST: catalog-db
       DB_PORT: 5432
       DB_NAME: catalog
       DB_USER: postgres
       DB_PASSWORD: postgres
+      KAFKA_BOOTSTRAP_SERVERS: kafka:9092
     ports:
-      - "8081:8081"   # REST
-      - "9091:9091"   # gRPC
+      - "8081:8081"
     depends_on:
       catalog-db:
         condition: service_healthy
-    # Ready = the REST port is accepting connections (Spring Boot binds Tomcat last,
-    # so this implies the context — and the gRPC server — are up).
+      kafka:
+        condition: service_healthy
+    # Ready = the REST port is accepting connections. CatalogPublisher runs before
+    # Tomcat binds, so this implies the catalog snapshot is already in Kafka.
     healthcheck:
       test: ["CMD", "bash", "-c", "exec 3<>/dev/tcp/localhost/8081"]
       interval: 3s
@@ -108,17 +152,20 @@ services:
 
   inventory-service:
     build: ./inventory-service
+    restart: on-failure
     environment:
       DB_HOST: inventory-db
       DB_PORT: 5432
       DB_NAME: inventory
       DB_USER: postgres
       DB_PASSWORD: postgres
+      KAFKA_BOOTSTRAP_SERVERS: kafka:9092
     ports:
-      - "8083:8083"   # REST
-      - "9093:9093"   # gRPC
+      - "8083:8083"
     depends_on:
       inventory-db:
+        condition: service_healthy
+      kafka:
         condition: service_healthy
     healthcheck:
       test: ["CMD", "bash", "-c", "exec 3<>/dev/tcp/localhost/8083"]
@@ -129,27 +176,27 @@ services:
 
   checkout-service:
     build: ./checkout-service
+    restart: on-failure
     environment:
       DB_HOST: checkout-db
       DB_PORT: 5432
       DB_NAME: checkout
       DB_USER: postgres
       DB_PASSWORD: postgres
-      # gRPC targets of the services Checkout orchestrates.
-      CATALOG_GRPC_TARGET: catalog-service:9091
-      INVENTORY_GRPC_TARGET: inventory-service:9093
-      ANALYTICS_GRPC_TARGET: analytics-service:9094
+      DB_POOL_SIZE: 20
+      KAFKA_BOOTSTRAP_SERVERS: kafka:9092
     ports:
-      - "8082:8082"   # REST
+      - "8082:8082"
+    # Needs catalog's snapshot in Kafka to build its replica; does NOT need
+    # inventory or analytics to be up (events wait in Kafka until they are).
     depends_on:
       checkout-db:
         condition: service_healthy
+      kafka:
+        condition: service_healthy
       catalog-service:
         condition: service_healthy
-      inventory-service:
-        condition: service_healthy
-      analytics-service:
-        condition: service_healthy
+    # CatalogReplica loads before Tomcat binds, so "port open" implies "replica ready".
     healthcheck:
       test: ["CMD", "bash", "-c", "exec 3<>/dev/tcp/localhost/8082"]
       interval: 3s
@@ -159,17 +206,20 @@ services:
 
   analytics-service:
     build: ./analytics-service
+    restart: on-failure
     environment:
       DB_HOST: analytics-db
       DB_PORT: 5432
       DB_NAME: analytics
       DB_USER: postgres
       DB_PASSWORD: postgres
+      KAFKA_BOOTSTRAP_SERVERS: kafka:9092
     ports:
-      - "8084:8084"   # REST
-      - "9094:9094"   # gRPC
+      - "8084:8084"
     depends_on:
       analytics-db:
+        condition: service_healthy
+      kafka:
         condition: service_healthy
     healthcheck:
       test: ["CMD", "bash", "-c", "exec 3<>/dev/tcp/localhost/8084"]
