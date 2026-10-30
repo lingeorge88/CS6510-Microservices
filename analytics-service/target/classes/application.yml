@@ -1,16 +1,16 @@
 server:
   port: ${SERVER_PORT:8084}
 
-grpc:
-  server:
-    port: ${GRPC_PORT:9094}
-
 spring:
   application:
     name: analytics-service
+  threads:
+    virtual:
+      enabled: true          # Tomcat + Kafka listeners on virtual threads; blocking JDBC is cheap
   datasource:
     # Analytics' OWN database. docker-compose sets DB_HOST=analytics-db.
-    url: jdbc:postgresql://${DB_HOST:localhost}:${DB_PORT:5444}/${DB_NAME:analytics}
+    # reWriteBatchedInserts: the driver turns JDBC batches into multi-row INSERTs.
+    url: jdbc:postgresql://${DB_HOST:localhost}:${DB_PORT:5444}/${DB_NAME:analytics}?reWriteBatchedInserts=true
     username: ${DB_USER:postgres}
     password: ${DB_PASSWORD:postgres}
     hikari:
@@ -22,6 +22,13 @@ spring:
       ddl-auto: none
     open-in-view: false
     show-sql: false
+  kafka:
+    bootstrap-servers: ${KAFKA_BOOTSTRAP_SERVERS:localhost:9092}
+    consumer:
+      auto-offset-reset: earliest  # a new consumer group starts from the oldest event
+      max-poll-records: 500        # up to 500 scans inserted per batch
+      properties:
+        fetch.max.wait.ms: 50      # default 500 ms would add up to 0.5 s of event lag
 
 selfcheckout:
   analytics:

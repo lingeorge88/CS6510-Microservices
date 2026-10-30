@@ -12,12 +12,12 @@
     <artifactId>analytics-service</artifactId>
     <packaging>jar</packaging>
     <name>analytics-service</name>
-    <description>Microservice: popular-items ranking. REST GET /analytics/popular-items; gRPC LogScan; owns analytics_db.</description>
+    <description>Microservice: popular-items ranking. REST GET /analytics/popular-items; consumes item-scanned events; owns analytics_db.</description>
 
     <dependencies>
         <dependency>
             <groupId>com.selfcheckout</groupId>
-            <artifactId>proto</artifactId>
+            <artifactId>events</artifactId>
             <version>0.0.1-SNAPSHOT</version>
         </dependency>
         <dependency>

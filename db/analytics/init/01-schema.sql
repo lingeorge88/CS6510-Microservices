@@ -2,14 +2,16 @@
 -- Analytics Service database (analytics_db).
 --
 -- Owned entirely by the Analytics microservice. The scan log carries the item
--- `name` (sent in the LogScan event), so popular-items ranking is a pure
+-- `name` (from the ItemScanned event), so popular-items ranking is a pure
 -- same-database aggregation — no join to the catalog's database. `id` is an
 -- identity column that doubles as the monotonic global scan sequence defining
--- the hopping window. Starts empty. Schema created once; service ddl-auto: none.
+-- the hopping window. `event_id` is UNIQUE so a redelivered event is ignored.
+-- Starts empty. Schema created once; service ddl-auto: none.
 -- ============================================================================
 
 CREATE TABLE scan_events (
     id         BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+    event_id   UUID         NOT NULL UNIQUE,
     sku        VARCHAR(20)  NOT NULL,
     name       VARCHAR(255) NOT NULL,
     scanned_at TIMESTAMP    NOT NULL

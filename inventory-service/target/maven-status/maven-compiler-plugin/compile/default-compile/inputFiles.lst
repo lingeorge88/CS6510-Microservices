@@ -1,6 +1,5 @@
 /Users/georgelin/Desktop/CS6510-Microservices/inventory-service/src/main/java/com/selfcheckout/inventory/InventoryApplication.java
 /Users/georgelin/Desktop/CS6510-Microservices/inventory-service/src/main/java/com/selfcheckout/inventory/LowStockController.java
+/Users/georgelin/Desktop/CS6510-Microservices/inventory-service/src/main/java/com/selfcheckout/inventory/StockDecrementListener.java
 /Users/georgelin/Desktop/CS6510-Microservices/inventory-service/src/main/java/com/selfcheckout/inventory/data/InventoryStock.java
 /Users/georgelin/Desktop/CS6510-Microservices/inventory-service/src/main/java/com/selfcheckout/inventory/data/InventoryStockRepository.java
-/Users/georgelin/Desktop/CS6510-Microservices/inventory-service/src/main/java/com/selfcheckout/inventory/grpc/GrpcServerLifecycle.java
-/Users/georgelin/Desktop/CS6510-Microservices/inventory-service/src/main/java/com/selfcheckout/inventory/grpc/InventoryGrpcService.java

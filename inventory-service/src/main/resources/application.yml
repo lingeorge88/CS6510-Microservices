@@ -1,16 +1,16 @@
 server:
   port: ${SERVER_PORT:8083}
 
-grpc:
-  server:
-    port: ${GRPC_PORT:9093}
-
 spring:
   application:
     name: inventory-service
+  threads:
+    virtual:
+      enabled: true          # Tomcat + Kafka listeners on virtual threads; blocking JDBC is cheap
   datasource:
     # Inventory's OWN database. docker-compose sets DB_HOST=inventory-db.
-    url: jdbc:postgresql://${DB_HOST:localhost}:${DB_PORT:5443}/${DB_NAME:inventory}
+    # reWriteBatchedInserts: the driver turns JDBC batches into multi-row statements.
+    url: jdbc:postgresql://${DB_HOST:localhost}:${DB_PORT:5443}/${DB_NAME:inventory}?reWriteBatchedInserts=true
     username: ${DB_USER:postgres}
     password: ${DB_PASSWORD:postgres}
     hikari:
@@ -22,7 +22,22 @@ spring:
       ddl-auto: none
     open-in-view: false
     show-sql: false
+  kafka:
+    bootstrap-servers: ${KAFKA_BOOTSTRAP_SERVERS:localhost:9092}
+    producer:
+      acks: all                    # wait until the broker has durably stored the message
+      properties:
+        enable.idempotence: true   # producer retries can't create duplicates in the log
+        linger.ms: 5               # wait up to 5 ms to batch the relay's sends together
+    consumer:
+      auto-offset-reset: earliest  # a new consumer group starts from the oldest event
+      max-poll-records: 500        # up to 500 completed baskets applied per DB transaction
+      properties:
+        fetch.max.wait.ms: 50      # default 500 ms would add up to 0.5 s of event lag
 
 selfcheckout:
   inventory:
     low-stock-threshold: 50
+  outbox:
+    # How often OutboxRelay polls the outbox table for committed events.
+    poll-interval-ms: 10

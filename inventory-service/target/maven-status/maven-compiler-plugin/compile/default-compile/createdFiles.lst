@@ -1,6 +1,5 @@
-com/selfcheckout/inventory/LowStockController.class
+com/selfcheckout/inventory/StockDecrementListener.class
 com/selfcheckout/inventory/InventoryApplication.class
 com/selfcheckout/inventory/data/InventoryStock.class
-com/selfcheckout/inventory/grpc/GrpcServerLifecycle.class
-com/selfcheckout/inventory/grpc/InventoryGrpcService.class
+com/selfcheckout/inventory/LowStockController.class
 com/selfcheckout/inventory/data/InventoryStockRepository.class

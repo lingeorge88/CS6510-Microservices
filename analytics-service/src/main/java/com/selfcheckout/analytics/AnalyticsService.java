@@ -7,11 +7,13 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.jdbc.core.JdbcTemplate;
 
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.sql.Timestamp;
 
 /**
  * Maintains and serves the popular-items hopping window: a scheduled task
@@ -23,6 +25,7 @@ public class AnalyticsService {
 
     private final ScanEventRepository scanEvents;
     private final PopularItemSnapshotRepository snapshots;
+    private final JdbcTemplate jdbc;
 
     private final int windowSize;
     private final int slideInterval;
@@ -31,12 +34,14 @@ public class AnalyticsService {
 
     public AnalyticsService(ScanEventRepository scanEvents,
                             PopularItemSnapshotRepository snapshots,
+                            JdbcTemplate jdbc,
                             @Value("${selfcheckout.analytics.window-size:1000}") int windowSize,
                             @Value("${selfcheckout.analytics.slide-interval:500}") int slideInterval,
                             @Value("${selfcheckout.analytics.popular-items-limit:10}") int popularItemsLimit,
                             @Value("${selfcheckout.analytics.snapshot-depth:100}") int snapshotDepth) {
         this.scanEvents = scanEvents;
         this.snapshots = snapshots;
+        this.jdbc = jdbc;
         this.windowSize = windowSize;
         this.slideInterval = slideInterval;
         this.popularItemsLimit = popularItemsLimit;
@@ -76,7 +81,18 @@ public class AnalyticsService {
                     row.getSku(), row.getName(), (int) row.getScanCount(), rank));
             rank++;
         }
-        snapshots.saveAll(rows);
+        jdbc.batchUpdate("""
+                INSERT INTO popular_items_snapshot
+                    (window_start, window_end, computed_at, sku, name, scan_count, rank)
+                VALUES (?, ?, ?, ?, ?, ?, ?)""", rows, rows.size(), (ps, r) -> {
+            ps.setLong(1, r.getWindowStart());
+            ps.setLong(2, r.getWindowEnd());
+            ps.setTimestamp(3, Timestamp.valueOf(r.getComputedAt()));
+            ps.setString(4, r.getSku());
+            ps.setString(5, r.getName());
+            ps.setInt(6, r.getScanCount());
+            ps.setInt(7, r.getRank());
+        });
     }
 
     @Transactional(readOnly = true)

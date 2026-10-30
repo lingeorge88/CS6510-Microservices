@@ -1,10 +1,9 @@
 com/selfcheckout/analytics/data/PopularItemSnapshotRepository.class
 com/selfcheckout/analytics/data/ScanEventRepository.class
-com/selfcheckout/analytics/grpc/GrpcServerLifecycle.class
 com/selfcheckout/analytics/AnalyticsService.class
 com/selfcheckout/analytics/data/ScanEventRepository$RankedScanRow.class
 com/selfcheckout/analytics/AnalyticsApplication.class
+com/selfcheckout/analytics/ScanEventListener.class
 com/selfcheckout/analytics/data/PopularItemSnapshot.class
 com/selfcheckout/analytics/AnalyticsController.class
 com/selfcheckout/analytics/data/ScanEvent.class
-com/selfcheckout/analytics/grpc/AnalyticsGrpcService.class

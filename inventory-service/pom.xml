@@ -12,12 +12,12 @@
     <artifactId>inventory-service</artifactId>
     <packaging>jar</packaging>
     <name>inventory-service</name>
-    <description>Microservice: stock levels. REST GET /inventory/low-stock; gRPC Decrement/Increment; owns inventory_db.</description>
+    <description>Microservice: stock levels. REST GET /inventory/low-stock; consumes transaction-completed events, publishes stock-shortfall events; owns inventory_db.</description>
 
     <dependencies>
         <dependency>
             <groupId>com.selfcheckout</groupId>
-            <artifactId>proto</artifactId>
+            <artifactId>events</artifactId>
             <version>0.0.1-SNAPSHOT</version>
         </dependency>
         <dependency>
